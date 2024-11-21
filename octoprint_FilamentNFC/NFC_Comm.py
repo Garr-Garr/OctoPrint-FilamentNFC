@@ -13,14 +13,14 @@
 #*******************************************************************************
 #***************************INCLIDE*********************************************
 #*******************************************************************************
-from PlasticData import spool,material,colorStr
-from MFRC522 import MFRC522
+from octoprint_FilamentNFC.PlasticData import spool, material, colorStr
+from octoprint_FilamentNFC.MFRC522 import MFRC522
 import RPi.GPIO as GPIO
 import signal
 import time
 import binascii
 import math
-from crc8 import crc
+from octoprint_FilamentNFC.crc8 import crc
 #*******************************************************************************
 #**************************CONSTANT*********************************************
 #*******************************************************************************
@@ -73,10 +73,10 @@ continue_reading = True
 #*******************************************************************************
 #*******************************************************************************
 #*******************************************************************************
-def end_read(signal,frame):
+def end_read(signal, frame):
     global continue_reading
-    print "Ctrl+C captured, ending read."
-    self.continue_reading = False
+    print("Ctrl+C captured, ending read.")
+    continue_reading = False
     GPIO.cleanup()
 #*******************************************************************************
 #*******************************************************************************
@@ -130,16 +130,16 @@ class NFCmodule:
                 while i<12:
                     del data[15-i]
                     i=i+1
-            print "Sector "+str(x)+" "+str(data)
+            print(f"Sector {str(x)} {str(data)}")
             x=x+1
         self.tag.MFRC522_StopCrypto1()
         return 1
 #******************************************************************************************
     def gr2mm(self,gr):
-        return gr/(self.spool.density * (math.pi*(self.spool.diameter/2)**2) * 0,001)
+        return gr/(self.spool.density * (math.pi*(self.spool.diameter/2)**2) * 0.001)
 #******************************************************************************************
     def mm2gr(self,mm):
-        return self.spool.density * (math.pi*(self.spool.diameter/2)**2) * mm * 0,001
+        return self.spool.density * (math.pi*(self.spool.diameter/2)**2) * mm * 0.001
 #******************************************************************************************
     def gr2mony(self,gr):
         return gr*self.spool.price/self.spool.weight
@@ -152,11 +152,11 @@ class NFCmodule:
         return self.spool.balance*100/self.spool.weight
 #******************************************************************************************
     def getUidStr(self,uid):
-        i=0
-        out=0
-        while i<self.tag.uidLen:
-            out=out|(uid[i]<<(8*i))
-            i=i+1
+        i = 0
+        out = 0
+        while i< self.tag.uidLen:
+            out = out | (uid[i] << (8*i))
+            i = i + 1
         return out
 #******************************************************************************************
     def readSpool(self):
@@ -183,10 +183,10 @@ class NFCmodule:
         if len(data) == 16:
             self.spool.material = data[0] | data[1]<<8
             self.spool.color    = data[2] | data[3]<<8
-            i=0
-            while i<4:
-                self.hashCalc.update(chr(data[i]))
-                i=i+1
+            i = 0
+            while i < 4:
+                self.hashCalc.update(bytes([data[i]]))
+                i = i + 1
             curBlock=curBlock+1
         else:
             return 0
@@ -195,10 +195,10 @@ class NFCmodule:
         if len(data) == 16:
             self.spool.weight   = data[0] | data[1]<<8
             self.spool.balance  = data[2] | data[3]<<8
-            i=0
-            while i<4:
-                self.hashCalc.update(chr(data[i]))
-                i=i+1
+            i = 0
+            while i < 4:
+                self.hashCalc.update(bytes([data[i]]))
+                i = i + 1
             curBlock=curBlock+1
         else:
             return 0
@@ -207,21 +207,21 @@ class NFCmodule:
         if len(data) == 16:
             self.spool.diameter  = data[0] | data[1]<<8
             self.spool.price    = data[2] | data[3]<<8
-            i=0
-            while i<4:
-                self.hashCalc.update(chr(data[i]))
-                i=i+1
-            curBlock=curBlock+1
+            i = 0
+            while i < 4:
+                self.hashCalc.update(bytes([data[i]]))
+                i = i + 1
+            curBlock = curBlock + 1
         else:
             return 0
         #***********BLOCK 7***********
         data = self.tag.MFRC522_Read(curBlock)
         if len(data) == 16:
             self.spool.density   = data[0] | data[1]<<8
-            while i<4:
-                self.hashCalc.update(chr(data[i]))
-                i=i+1
-            curBlock=curBlock+1
+            while i < 4:
+                self.hashCalc.update(bytes([data[i]]))
+                i = i + 1
+            curBlock = curBlock + 1
         else:
             return 0
         #***********BLOCK 8,9,10,11***********
@@ -230,25 +230,25 @@ class NFCmodule:
         while j<4:
             data = self.tag.MFRC522_Read(curBlock)
             if len(data) == 16:
-                i=0
-                while i<4:
-                    self.spool.vender += chr(data[i])
-                    self.hashCalc.update(chr(data[i]))
-                    i=i+1
-                curBlock=curBlock+1
+                i = 0
+                while i < 4:
+                    self.spool.vender += chr(data[i] if data[i] < 128 else ord('?'))
+                    self.hashCalc.update(bytes([data[i]]))
+                    i = i + 1
+                curBlock = curBlock + 1
             else:
                 return 0
-            j=j+1
+            j = j + 1
         #***********BLOCK 12**********
         data = self.tag.MFRC522_Read(curBlock)
         if len(data) == 16:
             self.spool.extMinTemp = data[0] | data[1]<<8
             self.spool.extMaxTemp = data[2] | data[3]<<8
             i=0
-            while i<4:
-                self.hashCalc.update(chr(data[i]))
-                i=i+1
-            curBlock=curBlock+1
+            while i < 4:
+                self.hashCalc.update(bytes([data[i]]))
+                i = i + 1
+            curBlock = curBlock + 1
         else:
             return 0
         #***********BLOCK 13**********
@@ -258,7 +258,7 @@ class NFCmodule:
             self.spool.bedMaxTemp = data[2] | data[3]<<8
             i=0
             while i<4:
-                self.hashCalc.update(chr(data[i]))
+                self.hashCalc.update(bytes([data[i]]))
                 i=i+1
             curBlock=curBlock+1
         else:
@@ -268,7 +268,7 @@ class NFCmodule:
         if len(data) == 16:
             i=0
             while i<4:
-                self.hashCalc.update(chr(data[i]))
+                self.hashCalc.update(bytes([data[i]]))
                 i=i+1
             curBlock=curBlock+1
         else:
@@ -277,36 +277,36 @@ class NFCmodule:
         data = self.tag.MFRC522_Read(curBlock)
         self.tag.MFRC522_StopCrypto1()
         if len(data) == 16:
-            self.hashRead         = data[3]
-            i=0
-            while i<3:
-                self.hashCalc.update(chr(data[i]))
-                i=i+1
-            curBlock=curBlock+1
+            self.hashRead = data[3]
+            i = 0
+            while i < 3 :
+                self.hashCalc.update(bytes([data[i]]))
+                i = i + 1
+            curBlock = curBlock + 1
         else:
             return 0
         if int(self.hashCalc.hexdigest(),16) == self.hashRead:
-            validData = 1
+            self.validData = 1
         else:
-            validData = 0
+            self.validData = 0
             #return 0
         if (self.DEBUG == 1):
-            print "uid        = " + str(hex(self.spool.uid))
-            print "material   = " + material[self.spool.material]
-            print "color      = " + colorStr[self.spool.color]
-            print "weight     = " + str(self.spool.weight) + " gr"
-            print "balance    = " + str(self.spool.balance) + " gr"
-            print "diameter    = " + str(self.spool.diameter*0.01) + " mm"
-            print "price      = " + str(self.spool.price) + " rub"
-            print "vender     = " + str(self.spool.vender)
-            print "density    = " + str(self.spool.density*0.01) + " gr/cm^3"
-            print "extMinTemp = " + str(self.spool.extMinTemp) + " 'C"
-            print "extMaxTemp = " + str(self.spool.extMaxTemp) + " 'C"
-            print "bedMinTemp = " + str(self.spool.bedMinTemp) + " 'C"
-            print "bedMaxTemp = " + str(self.spool.bedMaxTemp) + " 'C"
-            print "hash calc  = " + str(hex(int(self.hashCalc.hexdigest(),16)))
-            print "hash read  = " + str(hex(self.hashRead))
-            print "hash valid = " + str(validData)
+            print(f"uid        = {str(hex(self.spool.uid))}")
+            print(f"material   = {material[self.spool.material]}")
+            print(f"color      = {colorStr[self.spool.color]}")
+            print(f"weight     = {str(self.spool.weight)} gr")
+            print(f"balance    = {str(self.spool.balance)} gr")
+            print(f"diameter   = {str(self.spool.diameter * 0.01)} mm")
+            print(f"price      = {str(self.spool.price)} rub")
+            print(f"vender     = {str(self.spool.vender)}")
+            print(f"density    = {str(self.spool.density * 0.01)} gr/cm^3")
+            print(f"extMinTemp = {str(self.spool.extMinTemp)} 'C")
+            print(f"extMaxTemp = {str(self.spool.extMaxTemp)} 'C")
+            print(f"bedMinTemp = {str(self.spool.bedMinTemp)} 'C")
+            print(f"bedMaxTemp = {str(self.spool.bedMaxTemp)} 'C")
+            print(f"hash calc  = {str(hex(int(self.hashCalc.hexdigest(),16)))}")
+            print(f"hash read  = {str(hex(self.hashRead))}")
+            print(f"hash valid = {str(validData)}")
 #******************************************************************************************
     def readSpoolClassic(self):
         data = []
@@ -323,7 +323,7 @@ class NFCmodule:
             self.spool.price    = data[priceAdr]    | data[priceAdr+1]<<8
             self.spool.density  = data[densityAdr]  | data[densityAdr+1]<<8
             for i in range(0,16):
-                self.hashCalc.update(chr(data[i]))
+                self.hashCalc.update(bytes([data[i]]))
         else:
             return 0
         #***********BLOCK 5***********
@@ -339,8 +339,8 @@ class NFCmodule:
         if len(data) == 16:
             self.spool.vender = ''
             for i in range(0,16):
-                self.spool.vender += chr(data[i])
-                self.hashCalc.update(chr(data[i]))
+                self.spool.vender += chr(data[i] if data[i] < 128 else ord('?'))
+                self.hashCalc.update(bytes([data[i]]))
         else:
             return 0
         #***********BLOCK 6***********
@@ -360,7 +360,7 @@ class NFCmodule:
             self.spool.bedMaxTemp = data[bedMaxTempAdr] | data[bedMaxTempAdr+1]<<8
             self.hashRead         = data[heshAdr]
             for i in range(0,15):
-                self.hashCalc.update(chr(data[i]))
+                self.hashCalc.update(bytes([data[i]]))
         else:
             return 0
         if int(self.hashCalc.hexdigest(),16) == self.hashRead:
@@ -370,22 +370,22 @@ class NFCmodule:
             return 0
         #********DEBUG******
         if (self.DEBUG == 1):
-            print "uid        = " + str(hex(self.spool.uid))
-            print "material   = " + material[self.spool.material]
-            print "color      = " + colorStr[self.spool.color]
-            print "weight     = " + str(self.spool.weight) + " gr"
-            print "balance    = " + str(self.spool.balance) + " gr"
-            print "diameter    = " + str(self.spool.diameter*0.01) + " mm"
-            print "price      = " + str(self.spool.price) + " rub"
-            print "vender     = " + str(self.spool.vender)
-            print "density    = " + str(self.spool.density*0.01) + " gr/cm^3"
-            print "extMinTemp = " + str(self.spool.extMinTemp) + " 'C"
-            print "extMaxTemp = " + str(self.spool.extMaxTemp) + " 'C"
-            print "bedMinTemp = " + str(self.spool.bedMinTemp) + " 'C"
-            print "bedMaxTemp = " + str(self.spool.bedMaxTemp) + " 'C"
-            print "hash calc  = " + str(hex(int(self.hashCalc.hexdigest(),16)))
-            print "hash read  = " + str(hex(self.hashRead))
-            print "hash valid = " + str(validData)
+            print ("uid        = " + str(hex(self.spool.uid)))
+            print ("material   = " + material[self.spool.material])
+            print ("color      = " + colorStr[self.spool.color])
+            print ("weight     = " + str(self.spool.weight) + " gr")
+            print ("balance    = " + str(self.spool.balance) + " gr")
+            print ("diameter    = " + str(self.spool.diameter*0.01) + " mm")
+            print ("price      = " + str(self.spool.price) + " rub")
+            print ("vender     = " + str(self.spool.vender))
+            print ("density    = " + str(self.spool.density*0.01) + " gr/cm^3")
+            print ("extMinTemp = " + str(self.spool.extMinTemp) + " 'C")
+            print ("extMaxTemp = " + str(self.spool.extMaxTemp) + " 'C")
+            print ("bedMinTemp = " + str(self.spool.bedMinTemp) + " 'C")
+            print ("bedMaxTemp = " + str(self.spool.bedMaxTemp) + " 'C")
+            print ("hash calc  = " + str(hex(int(self.hashCalc.hexdigest(),16))))
+            print ("hash read  = " + str(hex(self.hashRead)))
+            print ("hash valid = " + str(validData))
         #*******************
         return 1
 #******************************************************************************************
@@ -416,7 +416,7 @@ class NFCmodule:
         outData[2] = self.spool.color         & 0xFF
         outData[3] = (self.spool.color>>8)    & 0xFF
         for i in range (0,4):
-            self.hashCalc.update(chr(outData[i]))
+            self.hashCalc.update(bytes([outData[i]]))
         self.tag.MFRC522_Write(curBlock,outData)   # Write the data
         curBlock=curBlock+1
         #***********BLOCK 5***********
@@ -428,7 +428,7 @@ class NFCmodule:
         outData[2] = self.spool.balance      & 0xFF
         outData[3] = (self.spool.balance>>8) & 0xFF
         for i in range (0,4):
-            self.hashCalc.update(chr(outData[i]))
+            self.hashCalc.update(bytes([outData[i]]))
         self.tag.MFRC522_Write(curBlock,outData)   # Write the data
         curBlock=curBlock+1
         #***********BLOCK 6***********
@@ -440,7 +440,7 @@ class NFCmodule:
         outData[2] = self.spool.price        & 0xFF
         outData[3] = (self.spool.price>>8)   & 0xFF
         for i in range (0,4):
-            self.hashCalc.update(chr(outData[i]))
+            self.hashCalc.update(bytes([outData[i]]))
         self.tag.MFRC522_Write(curBlock,outData)   # Write the data
         curBlock=curBlock+1
         #***********BLOCK 7***********
@@ -450,7 +450,7 @@ class NFCmodule:
         outData[0] = self.spool.density      & 0xFF
         outData[1] = (self.spool.density>>8) & 0xFF
         for i in range (0,4):
-            self.hashCalc.update(chr(outData[i]))
+            self.hashCalc.update(bytes([outData[i]]))
         self.tag.MFRC522_Write(curBlock,outData)   # Write the data
         curBlock=curBlock+1
         #***********BLOCK 8,9,10,11***********
@@ -461,12 +461,12 @@ class NFCmodule:
             for i in range(0,16):
                 outData.append(0x00)
             for i in range(0,4):
-                if z<strLen:
-                    outData[i] = ord(self.spool.vender[z])
+                if z < strLen:
+                    outData[i] = ord(self.spool.vender[z]) if isinstance(self.spool.vender[z], str) else self.spool.vender[z]
                 else:
-                    outData[i] = ord(' ')
+                    outData[i] = 0x20
                 z=z+1
-                self.hashCalc.update(chr(outData[i]))
+                self.hashCalc.update(bytes([outData[i]]))
             self.tag.MFRC522_Write(curBlock,outData)   # Write the data
             curBlock=curBlock+1
         #***********BLOCK 12**********
@@ -478,7 +478,7 @@ class NFCmodule:
         outData[2] = self.spool.extMaxTemp      & 0xFF
         outData[3] = (self.spool.extMaxTemp>>8) & 0xFF
         for i in range (0,4):
-            self.hashCalc.update(chr(outData[i]))
+            self.hashCalc.update(bytes([outData[i]]))
         self.tag.MFRC522_Write(curBlock,outData)   # Write the data
         curBlock=curBlock+1
         #***********BLOCK 13**********
@@ -490,7 +490,7 @@ class NFCmodule:
         outData[2] = self.spool.bedMaxTemp      & 0xFF
         outData[3] = (self.spool.bedMaxTemp>>8) & 0xFF
         for i in range (0,4):
-            self.hashCalc.update(chr(outData[i]))
+            self.hashCalc.update(bytes([outData[i]]))
         self.tag.MFRC522_Write(curBlock,outData)   # Write the data
         curBlock=curBlock+1
         #***********BLOCK 14**********
@@ -499,7 +499,7 @@ class NFCmodule:
             outData.append(0x00)
         #RESERVED
         for i in range (0,4):
-            self.hashCalc.update(chr(outData[i]))
+            self.hashCalc.update(bytes([outData[i]]))
         self.tag.MFRC522_Write(curBlock,outData)   # Write the data
         curBlock=curBlock+1
         #***********BLOCK 15**********
@@ -508,12 +508,12 @@ class NFCmodule:
             outData.append(0x00)
         #RESERVED
         for i in range (0,3):
-            self.hashCalc.update(chr(outData[i]))
+            self.hashCalc.update(bytes([outData[i]]))
         outData[3] = int(self.hashCalc.hexdigest(),16)
         self.hashCalc.__init__()
         self.tag.MFRC522_Write(curBlock,outData)   # Write the data
-        
-        print "DONE!"
+
+        print ("DONE!")
 
 #******************************************************************************************
     def writeSpoolClassic(self):
@@ -538,7 +538,7 @@ class NFCmodule:
         outData[densityAdr]    = self.spool.density       & 0xFF
         outData[densityAdr+1]  = (self.spool.density>>8)  & 0xFF
         for i in range (0,16):
-            self.hashCalc.update(chr(outData[i]))
+            self.hashCalc.update(bytes([outData[i]]))
         #while (stat == 0):
         #    stat = self.tag.MFRC522_GetAccess(self.blockNumber)
         self.tag.MFRC522_Write(self.blockNumber, outData)   # Write the data
@@ -552,9 +552,9 @@ class NFCmodule:
         if (l > 16):
             l = 16
         for i in range(0,l):
-            outData[i] = ord(self.spool.vender[i])
+            outData[i] = ord(self.spool.vender[i]) if isinstance(self.spool.vender[i], str) else self.spool.vender[i]
         for i in range(0,16):
-            self.hashCalc.update(chr(outData[i])) 
+            self.hashCalc.update(bytes([outData[i]]))
         while (stat == 0):
             stat = self.tag.MFRC522_GetAccess(self.blockNumber+1)
         self.tag.MFRC522_Write(self.blockNumber+1, outData) # Write the data
@@ -573,7 +573,7 @@ class NFCmodule:
         outData[bedMaxTempAdr]   = self.spool.bedMaxTemp      & 0xFF
         outData[bedMaxTempAdr+1] = (self.spool.bedMaxTemp>>8) & 0xFF
         for i in range (0,15):
-            self.hashCalc.update(chr(outData[i]))   
+            self.hashCalc.update(bytes([outData[i]]))
         outData[heshAdr] = int(self.hashCalc.hexdigest(),16)
         self.hashCalc.__init__()
         while (stat == 0):
@@ -581,7 +581,7 @@ class NFCmodule:
         self.tag.MFRC522_Write(self.blockNumber+2, outData) # Write the data
         self.tag.MFRC522_StopCrypto1()
         if (self.DEBUG == 1):
-            print "DONE"
+            print ("DONE")
         return 1
 #*******************************************************************************
 #*******************************************************************************
@@ -591,16 +591,16 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, end_read)  # Hook the SIGINT
     GPIO.cleanup()
     NFC = NFCmodule()
-    print "*******************************************"
-    print "NFC test:"
-    print "*******************************************"
+    print("*******************************************")
+    print("NFC test:")
+    print("*******************************************")
     while(continue_reading):
-        #NFC.readAll()
+        #NFC.readAll())
         NFC.writeSpool()
-        print "*******************************************"
+        print("*******************************************")
         time.sleep(1)
         NFC.readSpool()
-        print "*******************************************"
+        print("*******************************************")
         time.sleep(10)
 #*******************************************************************************
 #*******************************************************************************

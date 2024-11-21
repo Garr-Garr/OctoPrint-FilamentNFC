@@ -1,4 +1,9 @@
 include README.md
+include LICENSE.md
 recursive-include octoprint_FilamentNFC/templates *
 recursive-include octoprint_FilamentNFC/translations *
 recursive-include octoprint_FilamentNFC/static *
+include octoprint_FilamentNFC/MFRC522.py
+include octoprint_FilamentNFC/PlasticData.py
+include octoprint_FilamentNFC/NFC_Comm.py
+include octoprint_FilamentNFC/crc8.py

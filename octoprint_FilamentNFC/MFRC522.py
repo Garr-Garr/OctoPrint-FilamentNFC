@@ -54,7 +54,7 @@ MIFARE_CLASSIC_1K_KEYS = [
 ]
 
 spi=spidev.SpiDev()
-  
+
 class MFRC522:
     NRSTPD  = 22
 
@@ -181,34 +181,34 @@ class MFRC522:
     mifareClassic1K   = 2
     mifareClassic2K   = 3
     mifareClassic4K   = 4
-    
+
     MI_ULC_SIZE       = 45
     MI_CLS1K_SIZE     = 64
     MI_CLS2K_SIZE     = 64
     MI_CLS4K_SIZE     = 64
-    
+
     mifareATQA = [0x0000,0x0044,0x0004,0x0005,0x0002]
     mifareName = ['None','Ultralight','Clssic 1K','Clssic 2K','Classic4K']
 
     SAK     = 0
     ATQA    = 0
-    
+
     #ISO/IEC 14443-3: Table 9 — Coding of SAK:
     ATQA_UIDSINGLE = 0x0000     # 4 bytes (CL1)
     ATQA_UIDDOUBLE = 0x0040     # 7 bytes (CL2)
     ATQA_UIDTRIPLE = 0x0080     # 10 bytes (CL3)
     ATQA_UIDMASK   = 0x00C0
-    
-    
-    
+
+
+
     tagType      = 0
     tagAuth      = 0
     uidLen       = 4
     memSize      = 0
     cascadeLevel = 1
-    
+
     DEBUG = 0
-    
+
     status = 0    # Status of RC522, 1 - onLine, 0 - communication ERROR
 #******************************************************************************************
 #******************************************************************************************
@@ -242,9 +242,9 @@ class MFRC522:
             auth = 1
             size = self.MI_CLS4K_SIZE
         if (self.DEBUG):
-            print ">>Mifare type = "+self.mifareName[type]
-            print ">>Authication = "+str(auth)
-            print ">>Memory size = "+str(size)
+            print(f">>Mifare type = {self.mifareName[type]}")
+            print(f">>Authentication = {auth}")
+            print(f">>Memory size = {size}")
         return (type,auth,size)
 #******************************************************************************************
     def MFRC522_Reset(self):
@@ -267,11 +267,11 @@ class MFRC522:
 #******************************************************************************************
     def AntennaOn(self):
         temp = self.Read_MFRC522(self.TxControlReg)
-        if(~(temp & 0x03)):
+        if not (temp & 0x03):
             self.SetBitMask(self.TxControlReg, 0x03)
         temp = self.Read_MFRC522(self.TxControlReg)
         if(temp & 0x03):
-            print "RC522 communication ERROR!"
+            print ("RC522 communication ERROR!")
             return 1
         else:
             return 0
@@ -308,7 +308,7 @@ class MFRC522:
         while True:
             n = self.Read_MFRC522(self.CommIrqReg)
             i = i - 1
-            if ~((i!=0) and ~(n&0x01) and ~(n&waitIRq)):
+            if not (i != 0) or (n & 0x01) or (n & waitIRq):
                 break
         self.ClearBitMask(self.BitFramingReg, 0x80)
         if i != 0:
@@ -330,7 +330,7 @@ class MFRC522:
                 i = 0
                 while i<n:
                     backData.append(self.Read_MFRC522(self.FIFODataReg))
-                    i = i + 1;
+                    i = i + 1
         else:
             status = self.MI_ERR
         return (status,backData,backLen)
@@ -340,12 +340,12 @@ class MFRC522:
 #
     def MFRC522_Request(self, reqMode):
         if (self.DEBUG):
-            print ">>------REQUEST------"
+            print (">>------REQUEST------")
         status   = None
         backBits = None
         TagType  = []
         self.Write_MFRC522(self.BitFramingReg, 0x07)
-        TagType.append(reqMode);
+        TagType.append(reqMode)
         (status,backData,backBits) = self.MFRC522_ToCard(self.PCD_TRANSCEIVE, TagType)
         if (status == self.MI_OK):
             self.ATQA = backData[0]+(backData[1]<<8)
@@ -360,8 +360,8 @@ class MFRC522:
                 self.uidLen       = 10
                 self.cascadeLevel = 3
             if (self.DEBUG):
-                print ">>UID length    = "+str(self.uidLen)
-                print ">>Cascade Level = "+str(self.cascadeLevel)
+                print(">>UID length    = {}".format(self.uidLen))
+                print(">>Cascade Level = {}".format(self.cascadeLevel))
         if ((status != self.MI_OK) | (backBits != 0x10)):
             status = self.MI_ERR
         return (status,backBits)
@@ -369,7 +369,7 @@ class MFRC522:
     def MFRC522_GetAccess(self,block):
         uid=[]
         buf=[]
-        (status,TagType) = self.MFRC522_Request(self.PICC_REQIDL)                   # Scan for cards 
+        (status,TagType) = self.MFRC522_Request(self.PICC_REQIDL)                   # Scan for cards
         if status!=self.MI_OK:
             return 0
         i=0
@@ -377,7 +377,7 @@ class MFRC522:
             (status,data)=self.MFRC522_Anticoll(i)
             if status != self.MI_OK:
                 if self.DEBUG:
-                    print ">>Error on cascad level №"+str(i+1)
+                    print(f">>Error on cascade level №{i+1}")
                 return 0
             self.MFRC522_SelectTag(data,i)
             j=0
@@ -385,7 +385,7 @@ class MFRC522:
                 buf.append(data[j])
                 j=j+1
             if self.DEBUG:
-                print ">>Data №" + str(i+1) + " = " + str(data)
+                print(f">>Data №{i+1} = {data}")
             i=i+1
         if self.cascadeLevel>1:
             del buf[0]
@@ -394,7 +394,7 @@ class MFRC522:
             uid.append(buf[i-1])
             i=i-1
         if self.DEBUG:
-            print ">>UID = " + str(uid)
+            print(f">>UID = {uid}")
         if self.tagAuth:
             i=0
             while i<len(MIFARE_CLASSIC_1K_KEYS):
@@ -407,7 +407,7 @@ class MFRC522:
 #******************************************************************************************
     def MFRC522_Anticoll(self,CLn):
         if (self.DEBUG):
-            print ">>------ANTICOLL-----"
+            print (">>------ANTICOLL-----")
         backData    = []
         serNum      = []
         self.Write_MFRC522(self.BitFramingReg,0x00)
@@ -445,7 +445,7 @@ class MFRC522:
 #******************************************************************************************
     def MFRC522_SelectTag(self,UID,CLn):
         if (self.DEBUG):
-            print ">>------SELECT------"
+            print (">>------SELECT------")
         backData = []
         buf      = []
         buf.append(self.PICC_SElECTTAG[CLn])
@@ -462,7 +462,7 @@ class MFRC522:
             self.SAK = backData[0]
             (self.tagType,self.tagAuth,self.memSize) = self.mifareCardSelect(self.SAK)
             if self.DEBUG:
-                print ">>SAK         = " + str(self.SAK)
+                print(f">>SAK = {self.SAK}")
             return backData[0]
         else:
             return 0
@@ -487,10 +487,10 @@ class MFRC522:
         (status, backData, backLen) = self.MFRC522_ToCard(self.PCD_AUTHENT,buff)
         # Check if an error occurred
         if not(status == self.MI_OK):
-            print "AUTH ERROR!!"
+            print ("AUTH ERROR!!")
             return self.MI_ERR
         if not (self.Read_MFRC522(self.Status2Reg) & 0x08) != 0:
-            print "AUTH ERROR(status2reg & 0x08) != 0"
+            print ("AUTH ERROR(status2reg & 0x08) != 0")
             return self.MI_ERR
         # Return the status
         return status
@@ -507,7 +507,7 @@ class MFRC522:
         recvData.append(pOut[1])
         (status,backData,backLen) = self.MFRC522_ToCard(self.PCD_TRANSCEIVE,recvData)
         if not(status == self.MI_OK):
-            print "Error while reading!"
+            print ("Error while reading!")
             return None
         i = 0
         if len(backData) == 16:
@@ -516,7 +516,7 @@ class MFRC522:
 #******************************************************************************************
     def MFRC522_Write(self, blockAddr, writeData):
         if len(writeData) != 16:
-            print "Error: Length of message not 16 byte!"
+            print ("Error: Length of message not 16 byte!")
             return 0
         buff = []
         buff.append(self.PICC_WRITE)
@@ -539,9 +539,9 @@ class MFRC522:
             buf.append(crc[1])
             (status, backData, backLen) = self.MFRC522_ToCard(self.PCD_TRANSCEIVE,buf)
             if not(status == self.MI_OK) or not(backLen == 4) or not((backData[0] & 0x0F) == 0x0A):
-                print "Error while writing"
+                print ("Error while writing")
             if status == self.MI_OK:
-                print "Data written"
+                print ("Data written")
         return 1
 #******************************************************************************************
     def MFRC522_DumpClassic1K(self, key, uid):
@@ -552,12 +552,12 @@ class MFRC522:
             if status == self.MI_OK:
                 self.MFRC522_Read(i)
             else:
-                print "Authentication error"
-            i = i+1
+                print ("Authentication error")
+            i = i + 1
 #******************************************************************************************
     def MFRC522_Init(self):
         GPIO.output(self.NRSTPD, 1)
-        self.MFRC522_Reset();
+        self.MFRC522_Reset()
         self.Write_MFRC522(self.TModeReg,      0x8D)
         self.Write_MFRC522(self.TPrescalerReg, 0x3E)
         self.Write_MFRC522(self.TReloadRegL,     30)

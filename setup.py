@@ -14,14 +14,14 @@ plugin_package = "octoprint_FilamentNFC"
 plugin_name = "OctoPrint-Filamentnfc"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "0.2.0"
+plugin_version = "0.3.0"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
 plugin_description = """Plugin for scanning spool nfc tag via RC522"""
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
-plugin_author = "Mike Mihailov"
+plugin_author = "Mike Mihailov & Garrett Broters"
 
 # The plugin's author's mail address.
 plugin_author_email = "photo.mickey@gmail.com"
@@ -33,7 +33,7 @@ plugin_url = "https://github.com/MikeMihailov/OctoPrint-Filamentnfc"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ["RPi.GPIO","spidev"]
+plugin_requires = ["RPi.GPIO","spidev>=3.4"]
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point

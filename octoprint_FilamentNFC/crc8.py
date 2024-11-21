@@ -8,10 +8,10 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# 
+#
 """The crc8 module.
 The crc8 module provides the same interface as the hashlib module.
     https://docs.python.org/2/library/hashlib.html
@@ -29,6 +29,7 @@ and gave credit "From the PyPy project" and the link
     http://snippets.dzone.com/posts/show/3543
 """
 import sys
+from typing import Union
 
 __author__="Nicco Kunzmann"
 __version__="0.0.4"
@@ -37,7 +38,7 @@ PY2 = sys.version_info[0] == 2
 
 
 class crc:
-    
+
     digest_size = 1
     block_size  = 1
 
@@ -74,72 +75,78 @@ class crc:
                 0xde, 0xd9, 0xd0, 0xd7, 0xc2, 0xc5, 0xcc, 0xcb,
                 0xe6, 0xe1, 0xe8, 0xef, 0xfa, 0xfd, 0xf4, 0xf3]
 
-    def __init__(self, initial_string=b''):
+    def __init__(self, initial_string: Union[bytes, bytearray, str] = b'') -> None:
         """Create a new crc8 hash instance."""
         self._sum = 0x00
+        if isinstance(initial_string, str):
+            initial_string = initial_string.encode('utf-8')
         self._update(initial_string)
 
-    def update(self, bytes_):
-        """Update the hash object with the string arg.
-        Repeated calls are equivalent to a single call with the concatenation
-        of all the arguments: m.update(a); m.update(b) is equivalent
-        to m.update(a+b).
+    def update(self, bytes_: Union[bytes, bytearray, str]) -> None:
+        """Update the hash object with the bytes-like object.
+
+        Args:
+            bytes_: The bytes-like object to update the hash with.
+
+        Raises:
+            TypeError: If the input is not a bytes-like object or string
         """
+        if isinstance(bytes_, str):
+            bytes_ = bytes_.encode('utf-8')
         self._update(bytes_)
 
-    def digest(self):
-        """Return the digest of the bytes passed to the update() method so far.
-        This is a string of digest_size bytes which may contain non-ASCII
-        characters, including null bytes.
-        """
-        return self._digest()
+    def digest(self) -> bytes:
+        """Return the digest of the bytes passed to the update() method.
 
-    def hexdigest(self):
-        """Return digest() as hexadecimal string.
-        Like digest() except the digest is returned as a string of double
-        length, containing only hexadecimal digits. This may be used to
-        exchange the value safely in email or other non-binary environments.
+        Returns:
+            bytes: A bytes object of digest_size bytes (1 byte for crc8)
+        """
+        return bytes([self._sum])
+
+    def hexdigest(self) -> str:
+        """Return digest as hexadecimal string.
+
+        Returns:
+            str: A string of hexadecimal digits
         """
         return hex(self._sum)[2:].zfill(2)
-        
-    if PY2:
-        def _update(self, bytes_):
-            if isinstance(bytes_, unicode):
-                bytes_ = bytes_.encode()
-            elif not isinstance(bytes_, str):
-                raise TypeError("must be string or buffer")
-            table = self._table
-            _sum = self._sum
-            for byte in bytes_:
-                _sum = table[_sum^ord(byte)]
-            self._sum = _sum
 
-        def _digest(self):
-            return chr(self._sum)
-    else:
-        def _update(self, bytes_):
-            if isinstance(bytes_, str):
-                raise TypeError("Unicode-objects must be encoded before"\
-                                " hashing")
-            elif not isinstance(bytes_, (bytes, bytearray)):
-                raise TypeError("object supporting the buffer API required")
-            table = self._table
-            _sum = self._sum
-            for byte in bytes_:
-                _sum = table[_sum^byte]
-            self._sum = _sum
-            
-        def _digest(self):
-            return bytes([self._sum])
-    
-    def copy(self):
-        """Return a copy ("clone") of the hash object.
-        
-        This can be used to efficiently compute the digests of strings that
-        share a common initial substring.
+    def _update(self, bytes_: Union[bytes, bytearray]) -> None:
+        """Internal update method.
+
+        Args:
+            bytes_: Bytes-like object to process
+
+        Raises:
+            TypeError: If input is not a bytes-like object
         """
-        crc = crc8()
-        crc._sum = self._sum
-        return crc
+        if not isinstance(bytes_, (bytes, bytearray)):
+            raise TypeError("object supporting the buffer API required")
 
-__all__ = ['crc8']
+        table = self._table
+        _sum = self._sum
+        for byte in bytes_:
+            _sum = table[_sum ^ byte]
+        self._sum = _sum
+
+    def copy(self) -> 'crc':
+        """Return a copy ("clone") of the hash object.
+
+        This can be used to efficiently compute the digests of byte strings that
+        share a common initial substring.
+
+        Returns:
+            crc: A new crc object with the same state
+        """
+        new = crc()
+        new._sum = self._sum
+        return new
+
+
+# Backwards compatibility
+class crc8(crc):
+    """Backwards compatibility class name"""
+    pass
+
+
+__all__ = ['crc', 'crc8']
